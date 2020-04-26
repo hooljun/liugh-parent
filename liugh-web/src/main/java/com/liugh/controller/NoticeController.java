@@ -6,19 +6,15 @@ import com.baomidou.mybatisplus.mapper.EntityWrapper;
 import com.baomidou.mybatisplus.plugins.Page;
 import com.liugh.annotation.CurrentUser;
 import com.liugh.annotation.ValidationParam;
-import com.liugh.base.BusinessException;
-import com.liugh.base.PageResult;
-import com.liugh.base.PublicResult;
 import com.liugh.base.PublicResultConstant;
+import com.liugh.config.ResponseHelper;
+import com.liugh.config.ResponseModel;
 import com.liugh.entity.Notice;
 import com.liugh.entity.User;
 import com.liugh.service.INoticeService;
-import com.liugh.util.ComUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import springfox.documentation.annotations.ApiIgnore;
-
-import java.util.List;
 
 /**
  * <p>
@@ -44,12 +40,11 @@ public class NoticeController {
      * @throws Exception
      */
     @GetMapping("/infoList")
-    public PublicResult findInfoList(@CurrentUser User user,@RequestParam(name = "pageIndex", defaultValue = "1", required = false) Integer pageIndex,
-                                     @RequestParam(name = "pageSize", defaultValue = "10", required = false) Integer pageSize) throws Exception{
+    public ResponseModel<Page<Notice>> findInfoList(@CurrentUser User user, @RequestParam(name = "pageIndex", defaultValue = "1", required = false) Integer pageIndex,
+                                      @RequestParam(name = "pageSize", defaultValue = "10", required = false) Integer pageSize) throws Exception{
 
-        Page<Notice> noticePage = noticeService.selectPage(new Page<>(pageIndex, pageSize),new EntityWrapper<Notice>().
-                eq("mobile",user.getMobile()).orderBy("create_time",false));
-        return new PublicResult(PublicResultConstant.SUCCESS, new PageResult<>(noticePage.getTotal(),pageIndex,pageSize,noticePage.getRecords()));
+        return ResponseHelper.buildResponseModel(noticeService.selectPage(new Page<>(pageIndex, pageSize),new EntityWrapper<Notice>().
+                eq("mobile",user.getMobile()).orderBy("create_time",false)));
     }
 
     /**
@@ -58,16 +53,9 @@ public class NoticeController {
      * @throws Exception
      */
     @DeleteMapping
-    public PublicResult findInfoList(@CurrentUser User user) throws Exception{
-        List<Notice> notices = noticeService.selectList(new EntityWrapper<Notice>().eq("mobile",user.getMobile()));
-        if(ComUtil.isEmpty(notices)){
-            throw new BusinessException("消息不存在");
-        }else {
-            for (Notice notice:notices) {
-                noticeService.deleteById(notice.getNoticeId());
-            }
-        }
-        return new PublicResult<>(PublicResultConstant.SUCCESS, null);
+    public ResponseModel findInfoList(@CurrentUser User user) throws Exception{
+        noticeService.deleteByNotices(user);
+        return ResponseHelper.buildResponseModel(PublicResultConstant.SUCCEED);
     }
 
     /**
@@ -77,17 +65,10 @@ public class NoticeController {
      * @throws Exception
      */
     @PostMapping("/read")
-    public PublicResult read(@ValidationParam("noticeId,isRead")
+    public ResponseModel read(@ValidationParam("noticeId,isRead")
                              @RequestBody JSONObject requestJson) throws Exception{
-        Notice notice = noticeService.selectById(requestJson.getString("noticeId"));
-        if(ComUtil.isEmpty(notice)){
-            throw new BusinessException("消息不存在");
-        }
-        //已读
-        notice.setIsRead(requestJson.getInteger("isRead"));
-        boolean result = noticeService.updateById(notice);
-        return result? new PublicResult<>(PublicResultConstant.SUCCESS, null):
-                new PublicResult<>("更新失败，请联系管理员！",null);
+        noticeService.read(requestJson);
+        return ResponseHelper.buildResponseModel(PublicResultConstant.SUCCEED);
     }
     /**
      * 未读消息总数
@@ -95,9 +76,9 @@ public class NoticeController {
      * @throws Exception
      */
     @GetMapping("/noReadCount")
-    public PublicResult getNoRead(@CurrentUser User user) throws Exception{
-        List<Notice> notice = noticeService.selectList(new EntityWrapper<Notice>().where("mobile = {0} and is_read = 0",user.getMobile()));
-        return new PublicResult<>(PublicResultConstant.SUCCESS, notice.size());
+    public ResponseModel getNoRead(@CurrentUser User user) throws Exception{
+        return ResponseHelper.buildResponseModel(noticeService.selectList(new
+                EntityWrapper<Notice>().where("mobile = {0} and is_read = 0",user.getMobile())).size());
     }
 
 

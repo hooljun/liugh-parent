@@ -2,17 +2,15 @@ package com.liugh.shiro;
 
 import com.alibaba.fastjson.JSONObject;
 import com.liugh.base.Constant;
-import com.liugh.base.PublicResult;
 import com.liugh.base.PublicResultConstant;
-import com.liugh.config.SpringContextBean;
+import com.liugh.config.ResponseHelper;
 import com.liugh.entity.User;
 import com.liugh.service.IUserService;
+import com.liugh.service.SpringContextBeanService;
 import com.liugh.util.ComUtil;
 import com.liugh.util.JWTUtil;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.shiro.web.filter.authc.BasicHttpAuthenticationFilter;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.RequestMethod;
 
@@ -20,18 +18,15 @@ import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
 import java.io.PrintWriter;
 
 /**
- * @author liugh
+ * @author grm
  *
  * 代码的执行流程preHandle->isAccessAllowed->isLoginAttempt->executeLogin
  */
 public class JWTFilter extends BasicHttpAuthenticationFilter {
 
-
-    private Logger logger = LoggerFactory.getLogger(this.getClass());
     private IUserService userService;
     /**
      * 判断用户是否想要登入。
@@ -83,7 +78,7 @@ public class JWTFilter extends BasicHttpAuthenticationFilter {
 
     private void setUserBean(ServletRequest request, ServletResponse response, JWTToken token) {
         if (this.userService == null) {
-            this.userService = SpringContextBean.getBean(IUserService.class);
+            this.userService = SpringContextBeanService.getBean(IUserService.class);
         }
         String userNo =  JWTUtil.getUserNo(token.getPrincipal().toString());
         User userBean = userService.selectById(userNo);
@@ -190,7 +185,7 @@ public class JWTFilter extends BasicHttpAuthenticationFilter {
             response.setCharacterEncoding("utf-8");
             out = response.getWriter();
             response.setContentType("application/json; charset=utf-8");
-            out.print(JSONObject.toJSONString(new PublicResult<>(PublicResultConstant.UNAUTHORIZED, null)));
+            out.print(JSONObject.toJSONString(ResponseHelper.validationFailure(PublicResultConstant.UNAUTHORIZED)));
             out.flush();
         } catch (Exception e) {
             e.printStackTrace();

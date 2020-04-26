@@ -16,7 +16,7 @@
 
 3.使用JSONObject统一获取body请求参数，减少实体类的数量。完成自定义@ValidationParam注解验证请求参数是否为空。
 
-      ![](https://oscimg.oschina.net/oscnet/3aef52625a42756283ab5a5aeaa4d800a2c.jpg)
+      ![](https://oscimg.oschina.net/oscnet/f3baf3e96123d41a8fff8bf2ac62684b9bb.jpg)
 
 4.使用bcrypt算法加密密码，著名代码托管网站Github和美国军方防火墙同样采用此算法，靠bcrypt算法会成功保住密码强度不算很高的大部分账户。
 
@@ -24,13 +24,19 @@
 
      ![](https://static.oschina.net/uploads/space/2018/0512/234950_u2kv_3577599.png)
 
-6.用SpringAOP切面编程进行声明式事务，过滤请求参数，防止XSS攻击。
+6.用SpringAOP切面编程进行声明式事务(service层增删改方法命名规范会自动加上事物)，过滤请求参数，防止XSS攻击。
 
 7.使用POST请求登录返回token和权限信息，保证请求无状态，返回实体如果属性为空不显示。
 
-    ![](https://oscimg.oschina.net/oscnet/65315a182f2e70eca0a6e71147f9cfaced4.jpg)
+    ![](https://oscimg.oschina.net/oscnet/a12b5783657b7fd29f413c4a231bb6d6a7e.jpg)
 
-8.完成微信/微博/QQ第三方登录功能,WebSocket实时消息推送,短信登录注册等功能.
+8.完成微信/微博/QQ第三方登录功能，完成用户名电话邮箱三种方式登录,WebSocket实时消息推送,短信登录注册等功能.
+
+9.完成方法限流注解,重要防刷方法被访问距离下一次时间可调节
+
+10.自己实现轻量级工作流,用状态机完成
+
+11.整合快捷操作excel组件,加快开发速度
 
 ## 三、程序逻辑
 
@@ -58,16 +64,17 @@
     
 -   访问登录接口：localhost:8081/api/v1/login
     
--   账号密码：13888888888/123456(管理员)
+-   账号密码：{"identity":"13888888888","password":"123456"}或 {"identity":"admin","password":"123456"}
+或 {"identity":"53182347@qq.com","password":"123456"}(管理员)
     
 -   获取token访问其他接口
 
--   注意!访问的接口url统一会加上/api/v1
+-   注意!!!!!访问的接口url统一会加上/api/v1,编译器请安装lombok插件,不然会报红
     
 
 运行截图：
 
-![](https://oscimg.oschina.net/oscnet/6c45f5bfa57fa868b4fb700011f943e65b0.jpg)
+![](https://oscimg.oschina.net/oscnet/e734e53d9c9e92665fc8eae18168f845686.jpg)
 
 彩蛋：项目注释完整，并且自定义了启动图案~
 

@@ -16,12 +16,24 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 
 /**
+ * 验证参数切面
  * @author liugh
  * @since on 2018/5/10.
  */
-public class ValidationParamAspect implements AspectApi{
+public class ValidationParamAspect extends AbstractAspectManager{
+
+    public ValidationParamAspect(AspectApi aspectApi){
+        super(aspectApi);
+    }
     @Override
-    public Object doHandlerAspect(Object [] obj ,ProceedingJoinPoint pjp, Method method,boolean isAll) throws Throwable{
+    public Object doHandlerAspect(ProceedingJoinPoint pjp, Method method) throws Throwable{
+        super.doHandlerAspect(pjp,method);
+        execute(pjp,method);
+        return null;
+    }
+
+
+    protected Object execute(ProceedingJoinPoint pjp, Method method) throws Throwable{
        //获取注解的value值返回
         String validationParamValue = StringUtil.getMethodAnnotationOne(method,ValidationParam.class.getSimpleName());
         RequestAttributes ra = RequestContextHolder.getRequestAttributes();
@@ -29,7 +41,8 @@ public class ValidationParamAspect implements AspectApi{
         HttpServletRequest request = sra.getRequest();
         String requestURI = request.getRequestURI();
         //获取类名上的url
-        String url = getMethodUrl(method);
+        String url = getMethodUrl(method,request.getContextPath());
+        Object[] obj = pjp.getArgs();
         if(requestURI.equals(url)) {
             if (!ComUtil.isEmpty(validationParamValue)) {
                 for (int i = 0; i < obj.length; i++) {
@@ -43,7 +56,7 @@ public class ValidationParamAspect implements AspectApi{
                 }
             }
         }
-        return obj;
+        return null;
     }
 
     /**
@@ -51,10 +64,11 @@ public class ValidationParamAspect implements AspectApi{
      * @param method
      * @return
      */
-    private String getMethodUrl(Method method) {
+    private String getMethodUrl(Method method,String contextPath) {
         Class<?> declaringClass = method.getDeclaringClass();
         Annotation[] annotations = declaringClass.getAnnotations();
         StringBuilder url = new StringBuilder();
+        url.append(contextPath);
         for (Annotation annotation:annotations) {
             if(annotation instanceof RequestMapping){
                 String[] value = ((RequestMapping) annotation).value();
@@ -79,7 +93,7 @@ public class ValidationParamAspect implements AspectApi{
      * @param jsonObject
      * @param requiredColumns
      */
-    public void hasAllRequired(final JSONObject jsonObject, String requiredColumns) {
+    private void hasAllRequired(final JSONObject jsonObject, String requiredColumns) {
         if (!ComUtil.isEmpty(requiredColumns)) {
             //验证字段非空
             String[] columns = requiredColumns.split(",");

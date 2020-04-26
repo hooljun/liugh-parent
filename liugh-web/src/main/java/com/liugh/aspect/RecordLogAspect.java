@@ -5,7 +5,7 @@ import java.util.Map;
 
 import com.alibaba.fastjson.JSONObject;
 import com.liugh.annotation.Log;
-import com.liugh.config.SpringContextBean;
+import com.liugh.service.SpringContextBeanService;
 import com.liugh.entity.OperationLog;
 import com.liugh.service.IOperationLogService;
 import com.liugh.util.ComUtil;
@@ -21,16 +21,27 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 import javax.servlet.http.HttpServletRequest;
 
 /**
+ * 记录日志切面
  * @author liugh
  * @since on 2018/5/10.
  */
-public class RecordLogAspect implements AspectApi {
+public class RecordLogAspect extends AbstractAspectManager {
+
+    public RecordLogAspect(AspectApi aspectApi){
+        super(aspectApi);
+    }
+
+    @Override
+    public Object doHandlerAspect(ProceedingJoinPoint pjp, Method method) throws Throwable{
+        super.doHandlerAspect(pjp,method);
+        return execute(pjp,method);
+    }
 
     private Logger logger = LoggerFactory.getLogger(RecordLogAspect.class);
 
-    @Async
     @Override
-    public Object doHandlerAspect(Object [] obj ,ProceedingJoinPoint pjp, Method method,boolean isAll) throws Throwable{
+    @Async
+    protected Object execute(ProceedingJoinPoint pjp, Method method) throws Throwable{
         Log log  = method.getAnnotation( Log.class );
         // 异常日志信息
         String actionLog = null;
@@ -42,11 +53,7 @@ public class RecordLogAspect implements AspectApi {
         // 开始时间戳
         long operationTime = System.currentTimeMillis();
         try {
-            if(isAll){
-               AspectHandler aspectHandler = new ValidationParamOperate();
-               aspectHandler.doAspectHandler(pjp,obj,method,false);
-            }
-            return pjp.proceed(obj);
+            return pjp.proceed(pjp.getArgs());
         } catch ( Throwable throwable ) {
             isException = true;
             actionLog = throwable.getMessage();
@@ -66,7 +73,7 @@ public class RecordLogAspect implements AspectApi {
                             boolean isException,
                             StackTraceElement[] stackTrace) {
         RequestAttributes ra = RequestContextHolder.getRequestAttributes();
-        IOperationLogService operationLogService = SpringContextBean.getBean(IOperationLogService.class);
+        IOperationLogService operationLogService = SpringContextBeanService.getBean(IOperationLogService.class);
         ServletRequestAttributes sra = (ServletRequestAttributes) ra;
         HttpServletRequest request = sra.getRequest();
         String authorization = request.getHeader("Authorization");
@@ -79,6 +86,8 @@ public class RecordLogAspect implements AspectApi {
         operationLog.setClassName(joinPoint.getTarget().getClass().getName() );
         operationLog.setCreateTime(startTime);
         operationLog.setLogDescription(log.description());
+        operationLog.setModelName(log.modelName());
+        operationLog.setAction(log.action());
         if(isException){
             StringBuilder sb = new StringBuilder();
             sb.append(actionLog+" &#10; ");
@@ -95,14 +104,14 @@ public class RecordLogAspect implements AspectApi {
         for (int i = 0; i < args.length; i++) {
             if(args[i] instanceof JSONObject){
                 JSONObject parse = (JSONObject)JSONObject.parse(args[i].toString());
-                if(!ComUtil.isEmpty(parse.getString("passWord"))){
-                    parse.put("passWord","*******");
+                if(!ComUtil.isEmpty(parse.getString("password"))){
+                    parse.put("password","*******");
                 }
-                if(!ComUtil.isEmpty(parse.getString("rePassWord"))){
-                    parse.put("rePassWord","*******");
+                if(!ComUtil.isEmpty(parse.getString("rePassword"))){
+                    parse.put("rePassword","*******");
                 }
-                if(!ComUtil.isEmpty(parse.getString("oldPassWord"))){
-                    parse.put("oldPassWord","*******");
+                if(!ComUtil.isEmpty(parse.getString("oldPassword"))){
+                    parse.put("oldPassword","*******");
                 }
                 operationLog.setActionArgs(parse.toString());
             }else if(args[i] instanceof String
@@ -151,7 +160,7 @@ public class RecordLogAspect implements AspectApi {
     }
 
 
-    public  String getIpAddress(HttpServletRequest request) {
+    private  String getIpAddress(HttpServletRequest request) {
         String ip = request.getHeader("x-forwarded-for");
         if (ip == null || ip.length() == 0 || "unknown".equalsIgnoreCase(ip)) {
             ip = request.getHeader("Proxy-Client-IP");
